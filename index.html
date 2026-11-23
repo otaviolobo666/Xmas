@@ -249,8 +249,12 @@ function playVictoryMusic() {
 }
 
 /* Progresso */
-const SAVE_KEY = 'officeMazeProgress';
+// Chave versionada: ignora desbloqueios antigos feitos durante testes.
+const SAVE_KEY = 'officeMazeProgress_v2';
 let progress = { unlocked: 0, character: 0 };
+// Desbloqueio por tecla J é temporário e não altera o progresso real salvo.
+let cheatUnlockAll = false;
+const isLevelUnlocked = index => cheatUnlockAll || index <= progress.unlocked;
 try {
   const raw = localStorage.getItem(SAVE_KEY);
   if (raw) {
@@ -431,7 +435,7 @@ const CHARACTERS = [
   {
     id: 2,
     name: 'MARCOS',
-    desc: 'Resistente · Mais lento, porém não perde café',
+    desc: 'Resistente · Mais lento e retorna ao início',
     speed: 2.3,
     jump: 8.5,
     sprite: [
@@ -706,11 +710,11 @@ window.addEventListener('keydown', e => {
     }
   }
   else if (state === STATE.LEVEL_SELECT) {
-    if (e.code === 'KeyJ') { progress.unlocked = LEVELS.length - 1; saveProgress(); beep(880,0.16,'triangle',0.06); }
+    if (e.code === 'KeyJ') { cheatUnlockAll = true; beep(880,0.16,'triangle',0.06); }
     if (left)  { levelSelCol = Math.max(0, levelSelCol-1); beep(500,0.05); }
     if (right) { levelSelCol = Math.min(LEVELS.length-1, levelSelCol+1); beep(500,0.05); }
     if (confirm) {
-      if (levelSelCol <= progress.unlocked) showStory(levelSelCol);
+      if (isLevelUnlocked(levelSelCol)) showStory(levelSelCol);
       else beep(200,0.2,'sawtooth',0.05);
     }
   }
@@ -758,7 +762,7 @@ canvas.addEventListener('pointerdown', e => {
       const by = 275;
       if (Math.abs(x - bx) < 42 && Math.abs(y - by) < 64) {
         levelSelCol = i;
-        if (i <= progress.unlocked) showStory(i);
+        if (isLevelUnlocked(i)) showStory(i);
         else beep(200,0.2,'sawtooth',0.05);
       }
     }
@@ -1450,7 +1454,7 @@ function drawLevelSelect() {
   const dayCenters = [93, 198, 302, 406, 515];
   const cardY = 275;
   LEVELS.forEach((lvl, i) => {
-    const unlocked = i <= progress.unlocked;
+    const unlocked = isLevelUnlocked(i);
     const selected = i === levelSelCol;
     const bx = dayCenters[i];
 
@@ -1513,13 +1517,14 @@ function drawStoryScreen() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   const credits = [
+    { text: 'OFFICE MAZE', size: 27, color: '#ffe6a6', bold: true, gap: 24 },
     { text: 'A ÚLTIMA SEMANA DO ANO', size: 18, color: '#ffffff', bold: true, gap: 36 },
     { text: 'A última semana do ano chegou...', size: 16, color: '#fff8e7', gap: 25 },
     { text: 'e o estoque de paciência acabou.', size: 16, color: '#fff8e7', gap: 32 },
-    { text: `Leve ${hero} a percorrer os corredores,`, size: 16, color: '#fff8e7', gap: 24 },
-    { text: 'desvie do caos administrativo', size: 16, color: '#fff8e7', gap: 24 },
-    { text: 'e garanta sua dose diária de café', size: 16, color: '#fff8e7', gap: 24 },
-    { text: 'para sobreviver até sexta-feira.', size: 16, color: '#fff8e7', gap: 42 },
+    { text: `Leve ${hero} a percorrer os corredores,`, size: 15, color: '#fff8e7', gap: 24 },
+    { text: 'desvie do caos administrativo', size: 15, color: '#fff8e7', gap: 24 },
+    { text: 'e garanta sua dose diária de café', size: 15, color: '#fff8e7', gap: 24 },
+    { text: 'para sobreviver até sexta-feira.', size: 15, color: '#fff8e7', gap: 42 },
     { text: 'BOA SORTE!', size: 21, color: '#f4d58d', bold: true, gap: 36 }
   ];
 
